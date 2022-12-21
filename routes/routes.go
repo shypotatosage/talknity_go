@@ -12,6 +12,7 @@ func Init() *echo.Echo {
 	e.GET("/get-posts", controllers.FetchAllPosts)
 	e.GET("/get-communitycategories", controllers.FetchAllCommunityCategory)
 	e.GET("/get-communities", controllers.FetchAllCommunities)
+	e.GET("/get-communitymembers", controllers.FetchAllCommunityMember)
 	
 	e.POST("/register-user", controllers.RegisterUser)
 	e.POST("/login-user", controllers.CheckLogin)

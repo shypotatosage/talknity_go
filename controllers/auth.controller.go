@@ -21,7 +21,7 @@ func CheckLogin(c echo.Context) error {
 	usernameemail := c.FormValue("user_usernameemail")
 	password := c.FormValue("user_password")
 
-	res, err := models.CheckLogin(usernameemail, password)
+	res, obj, err := models.CheckLogin(usernameemail, password)
 
 	if err != nil {
 		errMsg := err.Error()
@@ -32,7 +32,7 @@ func CheckLogin(c echo.Context) error {
 			errMsg = "Username/Email does not exist!"
 		}
 		
-		return c.JSON(http.StatusInternalServerError,
+		return c.JSON(http.StatusOK,
 			map[string]string {
 				"message": errMsg,
 			})
@@ -60,6 +60,10 @@ func CheckLogin(c echo.Context) error {
 		map[string]string{
 			"message": "Login successful",
 			"token": mytoken,
+			"user_username": obj.Username,
+			"user_displayname": obj.Displayname,
+			"user_image": obj.Image,
+			"user_email": obj.Email,
 		})
 }
 

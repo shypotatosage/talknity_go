@@ -19,7 +19,7 @@ type User struct {
 	Image	 	string `json:"user_image"`
 }
 
-func CheckLogin(username, password string) (bool, error) {
+func CheckLogin(username, password string) (bool, User, error) {
 	var obj User
 	var pwd string
 	con := db.CreateCon()
@@ -32,13 +32,13 @@ func CheckLogin(username, password string) (bool, error) {
 	if err == sql.ErrNoRows {
 		fmt.Print("Username not found!")
 		
-		return false, err
+		return false, obj, err
 	}
 
 	if err != nil {
 		fmt.Print("Query error!")
 		
-		return false, err
+		return false, obj, err
 	}
 
 	match, err := helpers.CheckPasswordHash(password, pwd)
@@ -46,10 +46,10 @@ func CheckLogin(username, password string) (bool, error) {
 	if !match {
 		fmt.Print("Hash and password doesn't match!")
 		
-		return false, err
+		return false, obj, err
 	}
 	
-	return true, nil
+	return true, obj, nil
 }
 
 func RegisterUser(user_username string, user_email string, user_password string) (Response, error) {
@@ -79,7 +79,7 @@ func RegisterUser(user_username string, user_email string, user_password string)
 
 	con := db.CreateCon()
 
-	sqlStatement := "INSERT INTO `users`(`user_username`, `user_displayname`, `user_email`, `user_password`) VALUES (?,?,?,?)"
+	sqlStatement := "INSERT INTO `users`(`user_username`, `user_displayname`, `user_email`, `user_password`, `created_at`, `updated_at`) VALUES (?,?,?,?,NOW(),NOW())"
 	stmt, err := con.Prepare(sqlStatement)
 
 	if err != nil {

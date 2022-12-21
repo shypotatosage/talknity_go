@@ -135,7 +135,7 @@ func StoreCommunity(name string, description string, contact string, logo string
 
 	con := db.CreateCon()
 
-	sqlStatement := "INSERT INTO `communities`(`community_name`, `community_description`, `community_contact`, `community_logo`, `community_category_id`, `user_id`) VALUES (?,?,?,?,?,?,?)"
+	sqlStatement := "INSERT INTO `communities`(`community_name`, `community_description`, `community_contact`, `community_logo`, `community_category_id`, `user_id`,`created_at`,`updated_at`) VALUES (?,?,?,?,?,?,?,NOW(),NOW())"
 	stmt, err := con.Prepare(sqlStatement)
 
 	if err != nil {
