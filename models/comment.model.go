@@ -7,10 +7,10 @@ import (
 
 type Comment struct {
 	Id        uint64 `json:"id" validate:"required,numeric"`
-	User      User   `json:"user" validate:"required"`
 	Pid       uint64 `json:"post_id" validate:"required,numeric"`
 	Content   string `json:"user_image" validate:"required"`
 	CreatedAt string `json:"created_at"`
+	User      User   `json:"user" validate:"required"`
 }
 
 // Read All

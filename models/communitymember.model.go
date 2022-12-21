@@ -7,8 +7,8 @@ import (
 
 type CommunityMember struct {
 	Id   uint64 `json:"id" validate:"required,numeric"`
-	User User   `json:"user" validate:"required,numeric"`
 	Cid  uint64 `json:"community_id" validate:"required,numeric"`
+	User User   `json:"user" validate:"required,numeric"`
 }
 
 // Read All

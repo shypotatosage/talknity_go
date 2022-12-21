@@ -15,8 +15,8 @@ type Community struct {
 	Logo        string            `json:"community_logo" validate:"required"`
 	Cid         uint64            `json:"-" validate:"required,numeric"`
 	Lid         uint64            `json:"-" validate:"required,numeric"`
-	Leader      User              `json:"leader" validate:"required"`
 	CreatedAt   string            `json:"created_at"`
+	Leader      User              `json:"leader" validate:"required"`
 	Category    CommunityCategory `json:"category" validate:"required"`
 }
 
