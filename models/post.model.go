@@ -63,6 +63,43 @@ func FetchAllPosts() (Response, error) {
 	return res, nil
 }
 
+// Read 10
+func FetchPosts() (Response, error) {
+	var obj Post
+	var usr User
+	var arrObj []Post
+	var res Response
+
+	conn := db.CreateCon()
+
+	sqlStatement := "SELECT posts.id, posts.post_title, posts.post_content, posts.post_image, posts.anonymous, posts.user_id, posts.created_at, users.id, users.user_username, users.user_displayname, users.user_email, users.user_image users FROM posts INNER JOIN users ON posts.user_id = users.id LIMIT 10"
+
+	rows, err := conn.Query(sqlStatement)
+
+	if err != nil {
+		return res, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		err = rows.Scan(&obj.Id, &obj.Title, &obj.Content, &obj.Image, &obj.Anonymous, &obj.UId, &obj.CreatedAt, &usr.Id, &usr.Username, &usr.Displayname, &usr.Email, &usr.Image)
+		obj.User = usr
+
+		if err != nil {
+			return res, err
+		}
+
+		arrObj = append(arrObj, obj)
+	}
+
+	res.Status = http.StatusOK
+	res.Message = "Success"
+	res.Data = arrObj
+
+	return res, nil
+}
+
 // Insert Data
 func StorePost(title string, content string, image string, anonymous bool, uid uint64) (Response, error) {
 

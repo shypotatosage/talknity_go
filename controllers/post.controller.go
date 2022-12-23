@@ -20,6 +20,18 @@ func FetchAllPosts(c echo.Context) error {
 	return c.JSON(http.StatusOK, result)
 }
 
+func FetchPosts(c echo.Context) error {
+
+	result, err := models.FetchPosts()
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError,
+			map[string]string{"message": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, result)
+}
+
 func StorePost(c echo.Context) error {
 
 	title := c.FormValue("post_title")

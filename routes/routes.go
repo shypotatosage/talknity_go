@@ -10,8 +10,10 @@ func Init() *echo.Echo {
 	e := echo.New()
 	
 	e.GET("/get-posts", controllers.FetchAllPosts)
+	e.GET("/get-discussionshome", controllers.FetchAllPosts)
 	e.GET("/get-communitycategories", controllers.FetchAllCommunityCategory)
 	e.GET("/get-communities", controllers.FetchAllCommunities)
+	e.GET("/get-communitieshome", controllers.FetchCommunity)
 	e.GET("/get-communitymembers", controllers.FetchAllCommunityMember)
 	e.GET("/get-comments", controllers.FetchAllComments)
 	
@@ -19,6 +21,7 @@ func Init() *echo.Echo {
 	e.POST("/login-user", controllers.CheckLogin)
 	
 	e.POST("/store-post", controllers.StorePost)
+	e.POST("/store-community", controllers.StoreCommunity)
 	
 	e.PATCH("/update-post", controllers.UpdatePost)
 	

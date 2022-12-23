@@ -68,16 +68,17 @@ func FetchAllCommunities() (Response, error) {
 	return res, nil
 }
 
-// Read All
+// Read 10
 func FetchCommunity() (Response, error) {
 	var obj Community
 	var usr User
+	var cat CommunityCategory
 	var arrObj []Community
 	var res Response
 
 	conn := db.CreateCon()
 
-	sqlStatement := "SELECT communities.id, communities.community_name, communities.community_description, communities.community_contact, communities.community_logo, communities.community_category_id, communities.user_id, posts.created_at, users.id, users.user_username, users.user_displayname, users.user_email, users.user_image users FROM communities INNER JOIN users ON communities.user_id = users.id"
+	sqlStatement := "SELECT communities.id, communities.community_name, communities.community_description, communities.community_contact, communities.community_logo, communities.community_category_id, communities.user_id, communities.created_at, users.id, users.user_username, users.user_displayname, users.user_email, users.user_image, community_categories.id, community_categories.category_name, community_categories.category_logo, community_categories.category_bg FROM communities INNER JOIN users ON communities.user_id = users.id INNER JOIN community_categories ON communities.community_category_id = community_categories.id LIMIT 10"
 
 	rows, err := conn.Query(sqlStatement)
 
@@ -88,8 +89,9 @@ func FetchCommunity() (Response, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		err = rows.Scan(&obj.Id, &obj.Name, &obj.Description, &obj.Contact, &obj.Logo, &obj.Cid, &obj.Lid, &obj.CreatedAt, &usr.Id, &usr.Username, &usr.Displayname, &usr.Email, &usr.Image)
+		err = rows.Scan(&obj.Id, &obj.Name, &obj.Description, &obj.Contact, &obj.Logo, &obj.Cid, &obj.Lid, &obj.CreatedAt, &usr.Id, &usr.Username, &usr.Displayname, &usr.Email, &usr.Image, &cat.Id, &cat.Name, &cat.Logo, &cat.Bg)
 		obj.Leader = usr
+		obj.Category = cat
 
 		if err != nil {
 			return res, err
@@ -135,7 +137,7 @@ func StoreCommunity(name string, description string, contact string, logo string
 
 	con := db.CreateCon()
 
-	sqlStatement := "INSERT INTO `communities`(`community_name`, `community_description`, `community_contact`, `community_logo`, `community_category_id`, `user_id`,`created_at`,`updated_at`) VALUES (?,?,?,?,?,?,?,NOW(),NOW())"
+	sqlStatement := "INSERT INTO `communities`(`community_name`, `community_description`, `community_contact`, `community_logo`, `community_category_id`, `user_id`,`created_at`,`updated_at`) VALUES (?,?,?,?,?,?,NOW(),NOW())"
 	stmt, err := con.Prepare(sqlStatement)
 
 	if err != nil {

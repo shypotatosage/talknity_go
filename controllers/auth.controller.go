@@ -2,9 +2,10 @@ package controllers
 
 import (
 	"net/http"
-	"time"
+	"strconv"
 	"talknity/helpers"
 	"talknity/models"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
@@ -60,6 +61,7 @@ func CheckLogin(c echo.Context) error {
 		map[string]string{
 			"message": "Login successful",
 			"token": mytoken,
+			"user_id": strconv.Itoa(obj.Id),
 			"user_username": obj.Username,
 			"user_displayname": obj.Displayname,
 			"user_image": obj.Image,
