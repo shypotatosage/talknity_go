@@ -15,6 +15,7 @@ func Init() *echo.Echo {
 	
 	e.GET("/get-posts", controllers.FetchAllPosts)
 	e.GET("/get-postshome", controllers.FetchAllPosts)
+	e.GET("/get-ownedposts/:user_id", controllers.FetchOwnedPosts)
 	e.GET("/search-posts/:search_key", controllers.SearchPosts)
 
 	e.GET("/get-communitycategories", controllers.FetchAllCommunityCategory)

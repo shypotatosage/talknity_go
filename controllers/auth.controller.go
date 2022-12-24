@@ -28,7 +28,7 @@ func CheckLogin(c echo.Context) error {
 		errMsg := err.Error()
 
 		if (err.Error() == "crypto/bcrypt: hashedPassword is not the hash of the given password") {
-			errMsg = "Password does not Match!"
+			errMsg = "Password does not match!"
 		} else if (err.Error() == "sql: no rows in result set") {
 			errMsg = "Username/Email does not exist!"
 		}

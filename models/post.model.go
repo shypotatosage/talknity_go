@@ -12,7 +12,7 @@ type Post struct {
 	Title     string `json:"post_title" validate:"required,max=255"`
 	Content   string `json:"post_content" validate:"required"`
 	Image     string `json:"post_image"`
-	Anonymous bool   `json:"anonymous" validate:"required"`
+	Anonymous bool   `json:"anonymous"`
 	UId       uint64 `json:"-" validate:"required,numeric"`
 	CreatedAt string `json:"created_at"`
 	User      User   `json:"user"`
@@ -22,7 +22,7 @@ type PostInsert struct {
 	Title     string `json:"post_title" validate:"required,max=255"`
 	Content   string `json:"post_content" validate:"required"`
 	Image     string `json:"post_image"`
-	Anonymous bool   `json:"anonymous" validate:"required"`
+	Anonymous bool   `json:"anonymous"`
 	UId       uint64 `json:"-" validate:"required,numeric"`
 }
 
@@ -75,6 +75,43 @@ func FetchPosts() (Response, error) {
 	sqlStatement := "SELECT posts.id, posts.post_title, posts.post_content, posts.post_image, posts.anonymous, posts.user_id, posts.created_at, users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, '') FROM posts INNER JOIN users ON posts.user_id = users.id LIMIT 10"
 
 	rows, err := conn.Query(sqlStatement)
+
+	if err != nil {
+		return res, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		err = rows.Scan(&obj.Id, &obj.Title, &obj.Content, &obj.Image, &obj.Anonymous, &obj.UId, &obj.CreatedAt, &usr.Id, &usr.Username, &usr.Displayname, &usr.Email, &usr.Image)
+		obj.User = usr
+
+		if err != nil {
+			return res, err
+		}
+
+		arrObj = append(arrObj, obj)
+	}
+
+	res.Status = http.StatusOK
+	res.Message = "Success"
+	res.Data = arrObj
+
+	return res, nil
+}
+
+// Read 10
+func FetchOwnedPosts(uid string) (Response, error) {
+	var obj Post
+	var usr User
+	var arrObj []Post
+	var res Response
+
+	conn := db.CreateCon()
+
+	sqlStatement := "SELECT posts.id, posts.post_title, posts.post_content, posts.post_image, posts.anonymous, posts.user_id, posts.created_at, users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, '') FROM posts INNER JOIN users ON posts.user_id = users.id WHERE posts.user_id = ? LIMIT 10"
+
+	rows, err := conn.Query(sqlStatement, uid)
 
 	if err != nil {
 		return res, err

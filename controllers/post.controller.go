@@ -1,10 +1,15 @@
 package controllers
 
 import (
+	"fmt"
+	"io"
 	"net/http"
+	"os"
 	"strconv"
+	"strings"
 	"talknity/models"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
@@ -32,6 +37,19 @@ func FetchPosts(c echo.Context) error {
 	return c.JSON(http.StatusOK, result)
 }
 
+func FetchOwnedPosts(c echo.Context) error {
+	uid := c.Param("user_id")
+
+	result, err := models.FetchOwnedPosts(uid)
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError,
+			map[string]string{"message": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, result)
+}
+
 func SearchPosts(c echo.Context) error {
 	key := c.Param("search_key")
 
@@ -48,10 +66,45 @@ func SearchPosts(c echo.Context) error {
 func StorePost(c echo.Context) error {
 	title := c.FormValue("post_title")
 	content := c.FormValue("post_content")
-	image := c.FormValue("post_image")
+	image, err := c.FormFile("post_image")
+
+	fileExist := true
+
+	if err != nil {
+		if err != http.ErrMissingFile {
+			return c.JSON(http.StatusInternalServerError,
+				map[string]string{"message1": err.Error()})
+		}
+		fileExist = false
+	}
+
+	fileName := ""
+
+	if (fileExist) {
+		src, err := image.Open()
+	
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError,
+				map[string]string{"message": err.Error()})
+		}
+		
+		defer src.Close()
+	
+		fileByte, _ := io.ReadAll(src)
+		fileName = "images/post/" + strings.Replace(uuid.New().String(), "-", "", -1) + "." + strings.Split(image.Filename, ".")[1]
+	
+		err = os.WriteFile(fileName, fileByte, 0777)
+	
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError,
+				map[string]string{"message": err.Error()})
+		}
+	}
+
 	anonymous, err := strconv.ParseBool(c.FormValue("anonymous"))
 
 	if err != nil {
+		fmt.Println(err.Error())
 		return c.JSON(http.StatusInternalServerError,
 			map[string]string{"message": err.Error()})
 	}
@@ -59,11 +112,12 @@ func StorePost(c echo.Context) error {
 	uid, err := strconv.ParseUint(c.FormValue("uid"), 10, 64)
 
 	if err != nil {
+		fmt.Println(content + title)
 		return c.JSON(http.StatusInternalServerError,
 			map[string]string{"message": err.Error()})
 	}
 
-	result, err := models.StorePost(title, content, image, anonymous, uid)
+	result, err := models.StorePost(title, content, fileName, anonymous, uid)
 
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError,
