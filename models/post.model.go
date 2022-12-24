@@ -35,7 +35,7 @@ func FetchAllPosts() (Response, error) {
 
 	conn := db.CreateCon()
 
-	sqlStatement := "SELECT posts.id, posts.post_title, posts.post_content, posts.post_image, posts.anonymous, posts.user_id, posts.created_at, users.id, users.user_username, users.user_displayname, users.user_email, users.user_image users FROM posts INNER JOIN users ON posts.user_id = users.id"
+	sqlStatement := "SELECT posts.id, posts.post_title, posts.post_content, posts.post_image, posts.anonymous, posts.user_id, posts.created_at, users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, '') FROM posts INNER JOIN users ON posts.user_id = users.id"
 
 	rows, err := conn.Query(sqlStatement)
 
@@ -72,9 +72,46 @@ func FetchPosts() (Response, error) {
 
 	conn := db.CreateCon()
 
-	sqlStatement := "SELECT posts.id, posts.post_title, posts.post_content, posts.post_image, posts.anonymous, posts.user_id, posts.created_at, users.id, users.user_username, users.user_displayname, users.user_email, users.user_image users FROM posts INNER JOIN users ON posts.user_id = users.id LIMIT 10"
+	sqlStatement := "SELECT posts.id, posts.post_title, posts.post_content, posts.post_image, posts.anonymous, posts.user_id, posts.created_at, users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, '') FROM posts INNER JOIN users ON posts.user_id = users.id LIMIT 10"
 
 	rows, err := conn.Query(sqlStatement)
+
+	if err != nil {
+		return res, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		err = rows.Scan(&obj.Id, &obj.Title, &obj.Content, &obj.Image, &obj.Anonymous, &obj.UId, &obj.CreatedAt, &usr.Id, &usr.Username, &usr.Displayname, &usr.Email, &usr.Image)
+		obj.User = usr
+
+		if err != nil {
+			return res, err
+		}
+
+		arrObj = append(arrObj, obj)
+	}
+
+	res.Status = http.StatusOK
+	res.Message = "Success"
+	res.Data = arrObj
+
+	return res, nil
+}
+
+// Search
+func SearchPosts(key string) (Response, error) {
+	var obj Post
+	var usr User
+	var arrObj []Post
+	var res Response
+
+	conn := db.CreateCon()
+
+	sqlStatement := "SELECT posts.id, posts.post_title, posts.post_content, posts.post_image, posts.anonymous, posts.user_id, posts.created_at, users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, '') FROM posts INNER JOIN users ON posts.user_id = users.id WHERE posts.post_title LIKE ? OR posts.post_content LIKE ? OR (users.user_displayname LIKE ? AND posts.anonymous = false)"
+
+	rows, err := conn.Query(sqlStatement, "%" + key + "%", "%" + key + "%", "%" + key + "%")
 
 	if err != nil {
 		return res, err
@@ -129,7 +166,7 @@ func StorePost(title string, content string, image string, anonymous bool, uid u
 
 	con := db.CreateCon()
 
-	sqlStatement := "INSERT INTO `posts`(`post_title`, `post_content`, `post_image`, `anonymous`, `user_id`) VALUES (?,?,?,?,?)"
+	sqlStatement := "INSERT INTO `posts`(`post_title`, `post_content`, `post_image`, `anonymous`, `user_id`, `created_at`, `updated_at`) VALUES (?,?,?,?,?,NOW(),NOW())"
 	stmt, err := con.Prepare(sqlStatement)
 
 	if err != nil {

@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"talknity/models"
-	"time"
 
+	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 )
 
@@ -23,9 +24,22 @@ func FetchAllCommunities(c echo.Context) error {
 	return c.JSON(http.StatusOK, result)
 }
 
-func FetchCommunity(c echo.Context) error {
+func FetchCommunities(c echo.Context) error {
 
 	result, err := models.FetchCommunity()
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError,
+			map[string]string{"message": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, result)
+}
+
+func FetchOwnedCommunities(c echo.Context) error {
+	uid := c.Param("user_id")
+
+	result, err := models.FetchOwnedCommunity(uid)
 
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError,
@@ -56,7 +70,7 @@ func StoreCommunity(c echo.Context) error {
 	defer src.Close()
 
 	fileByte, _ := io.ReadAll(src)
-	fileName := "community/" + strconv.FormatInt(time.Now().Unix(), 10) + ".jpg"
+	fileName := "images/community/" + strings.Replace(uuid.New().String(), "-", "", -1) + "." + strings.Split(logo.Filename, ".")[1]
 
 	err = os.WriteFile(fileName, fileByte, 0777)
 

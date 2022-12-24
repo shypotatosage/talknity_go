@@ -32,8 +32,20 @@ func FetchPosts(c echo.Context) error {
 	return c.JSON(http.StatusOK, result)
 }
 
-func StorePost(c echo.Context) error {
+func SearchPosts(c echo.Context) error {
+	key := c.Param("search_key")
 
+	result, err := models.SearchPosts(key)
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError,
+			map[string]string{"message": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, result)
+}
+
+func StorePost(c echo.Context) error {
 	title := c.FormValue("post_title")
 	content := c.FormValue("post_content")
 	image := c.FormValue("post_image")
@@ -41,21 +53,21 @@ func StorePost(c echo.Context) error {
 
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError,
-			map[string]string{"message1": err.Error()})
+			map[string]string{"message": err.Error()})
 	}
 
 	uid, err := strconv.ParseUint(c.FormValue("uid"), 10, 64)
 
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError,
-			map[string]string{"message2": err.Error()})
+			map[string]string{"message": err.Error()})
 	}
 
 	result, err := models.StorePost(title, content, image, anonymous, uid)
 
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError,
-			map[string]string{"message3": err.Error()})
+			map[string]string{"message": err.Error()})
 	}
 
 	return c.JSON(http.StatusOK, result)
