@@ -8,8 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func FetchAllComments(c echo.Context) error {
-
+func StoreComment(c echo.Context) error {
 	pid, err := strconv.ParseUint(c.FormValue("post_id"), 10, 64)
 
 	if err != nil {
@@ -17,7 +16,16 @@ func FetchAllComments(c echo.Context) error {
 			map[string]string{"message": err.Error()})
 	}
 
-	result, err := models.FetchAllComment(pid)
+	content := c.FormValue("comment_content")
+	
+	uid, err := strconv.ParseUint(c.FormValue("user_id"), 10, 64)
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError,
+			map[string]string{"message": err.Error()})
+	}
+
+	result, err := models.StoreComment(pid, content, uid)
 
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError,

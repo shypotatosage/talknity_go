@@ -15,7 +15,7 @@ type User struct {
 	Username 	string `json:"user_username" validate:"required,max=50"`
 	Displayname string `json:"user_displayname" validate:"required,max=100"`
 	Password 	string `json:"-" validate:"required,min=8"`
-	Email    	string `json:"user_email" validate:"required,email"`
+	Email    	string `json:"user_email" validate:"required"`
 	Image	 	string `json:"user_image"`
 }
 
@@ -123,4 +123,126 @@ func RegisterUser(user_username string, user_email string, user_password string)
 	}
 
 	return res, nil
+}
+
+func UserProfile(uid string) (Response, error) {
+	var obj User
+	var res Response
+
+	con := db.CreateCon()
+
+	sqlStatement := "SELECT id, user_username, user_displayname, user_password, user_email, COALESCE(users.user_image, '') FROM users WHERE id = ?"
+	err := con.QueryRow(sqlStatement, uid).Scan(
+		&obj.Id, &obj.Username, &obj.Displayname, &obj.Password, &obj.Email, &obj.Image,
+	)
+
+	if err != nil {
+		return res, err
+	}
+
+	res.Status = http.StatusOK
+	res.Message = "Success"
+	res.Data = obj
+	
+	return res, nil
+}
+
+func GetUserImage(uid uint64) (string, error) {
+	img := ""
+
+	con := db.CreateCon()
+
+	sqlStatement := "SELECT user_image FROM users WHERE id = ?"
+	err := con.QueryRow(sqlStatement, uid).Scan(
+		&img,
+	)
+
+	if err != nil {
+		return "", err
+	}
+	
+	return img, nil
+}
+
+// Update Data
+func UpdateProfile(uid uint64, displayname string, username string, email string, password string, image string) (Response, error) {
+	var pwd string
+
+	var res Response
+
+	con := db.CreateCon()
+
+	sqlStatement1 := "SELECT user_password FROM users WHERE id = ?"
+
+	err := con.QueryRow(sqlStatement1, uid).Scan(
+		&pwd,
+	)
+
+	if err != nil {
+		return res, err
+	}
+
+	match, err := helpers.CheckPasswordHash(password, pwd)
+
+	if !match {
+		fmt.Print("Hash and password doesn't match!")
+		
+		return res, err
+	}
+
+	sqlStatement := ""
+
+	if image != "" {
+		sqlStatement = "UPDATE users SET user_displayname=?, user_username=?, user_email=?, user_image=? WHERE id=?"
+	} else {
+		sqlStatement = "UPDATE users SET user_displayname=?, user_username=?, user_email=? WHERE id=?"
+	}
+
+	stmt, err := con.Prepare(sqlStatement)
+
+	if err != nil {
+		return res, err
+	}
+
+	if image != "" {
+		result, err := stmt.Exec(displayname, username, email, image, uid)
+	
+		if err != nil {
+			return res, err
+		}
+	
+		lastInsertedID, err := result.RowsAffected()
+	
+		if err != nil {
+			return res, err
+		}
+	
+		res.Status = http.StatusOK
+		res.Message = "Success"
+		res.Data = map[string]int64{
+			"last_inserted_id2": lastInsertedID,
+		}
+	
+		return res, nil
+	} else {
+		result, err := stmt.Exec(displayname, username, email, uid)
+	
+		if err != nil {
+			return res, err
+		}
+	
+		lastInsertedID, err := result.RowsAffected()
+	
+		if err != nil {
+			return res, err
+		}
+	
+		res.Status = http.StatusOK
+		res.Message = "Success"
+		res.Data = map[string]int64{
+			"last_inserted_id1": lastInsertedID,
+		}
+	
+		return res, nil
+	}
 }

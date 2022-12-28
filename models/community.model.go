@@ -1,6 +1,8 @@
 package models
 
 import (
+	"database/sql"
+	"fmt"
 	"net/http"
 	"talknity/db"
 
@@ -8,7 +10,7 @@ import (
 )
 
 type Community struct {
-	Id          uint64               `json:"id" validate:"numeric"`
+	Id          uint64            `json:"id" validate:"numeric"`
 	Name        string            `json:"community_name" validate:"required,max=100"`
 	Description string            `json:"community_description" validate:"required"`
 	Contact     string            `json:"community_contact" validate:"required"`
@@ -18,6 +20,7 @@ type Community struct {
 	CreatedAt   string            `json:"created_at"`
 	Leader      User              `json:"leader" validate:"required"`
 	Category    CommunityCategory `json:"category" validate:"required"`
+	Count       uint64            `json:"member_count"`
 }
 
 type CommunityInsert struct {
@@ -39,7 +42,7 @@ func FetchAllCommunities() (Response, error) {
 
 	conn := db.CreateCon()
 
-	sqlStatement := "SELECT communities.id, communities.community_name, communities.community_description, communities.community_contact, communities.community_logo, communities.community_category_id, communities.user_id, communities.created_at, users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, ''), community_categories.id, community_categories.category_name, community_categories.category_logo, community_categories.category_color1, community_categories.category_color2, community_categories.category_color3 FROM communities INNER JOIN users ON communities.user_id = users.id INNER JOIN community_categories ON communities.community_category_id = community_categories.id"
+	sqlStatement := "SELECT communities.id, communities.community_name, communities.community_description, communities.community_contact, communities.community_logo, communities.community_category_id, communities.user_id, communities.created_at, (SELECT COUNT(community_members.user_id) FROM community_members WHERE community_members.community_id = communities.id), users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, ''), community_categories.id, community_categories.category_name, community_categories.category_logo, community_categories.category_color1, community_categories.category_color2, community_categories.category_color3 FROM communities INNER JOIN users ON communities.user_id = users.id INNER JOIN community_categories ON communities.community_category_id = community_categories.id"
 
 	rows, err := conn.Query(sqlStatement)
 
@@ -50,7 +53,7 @@ func FetchAllCommunities() (Response, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		err = rows.Scan(&obj.Id, &obj.Name, &obj.Description, &obj.Contact, &obj.Logo, &obj.Cid, &obj.Lid, &obj.CreatedAt, &usr.Id, &usr.Username, &usr.Displayname, &usr.Email, &usr.Image, &cat.Id, &cat.Name, &cat.Logo, &cat.Color1, &cat.Color2, &cat.Color3)
+		err = rows.Scan(&obj.Id, &obj.Name, &obj.Description, &obj.Contact, &obj.Logo, &obj.Cid, &obj.Lid, &obj.CreatedAt, &obj.Count, &usr.Id, &usr.Username, &usr.Displayname, &usr.Email, &usr.Image, &cat.Id, &cat.Name, &cat.Logo, &cat.Color1, &cat.Color2, &cat.Color3)
 		obj.Leader = usr
 		obj.Category = cat
 
@@ -78,7 +81,7 @@ func FetchCommunity() (Response, error) {
 
 	conn := db.CreateCon()
 
-	sqlStatement := "SELECT communities.id, communities.community_name, communities.community_description, communities.community_contact, communities.community_logo, communities.community_category_id, communities.user_id, communities.created_at, users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, ''), community_categories.id, community_categories.category_name, community_categories.category_logo, community_categories.category_color1, community_categories.category_color2, community_categories.category_color3 FROM communities INNER JOIN users ON communities.user_id = users.id INNER JOIN community_categories ON communities.community_category_id = community_categories.id LIMIT 10"
+	sqlStatement := "SELECT communities.id, communities.community_name, communities.community_description, communities.community_contact, communities.community_logo, communities.community_category_id, communities.user_id, communities.created_at, (SELECT COUNT(community_members.user_id) FROM community_members WHERE community_members.community_id = communities.id) as members_count, users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, ''), community_categories.id, community_categories.category_name, community_categories.category_logo, community_categories.category_color1, community_categories.category_color2, community_categories.category_color3 FROM communities INNER JOIN users ON communities.user_id = users.id INNER JOIN community_categories ON communities.community_category_id = community_categories.id ORDER BY members_count DESC LIMIT 10"
 
 	rows, err := conn.Query(sqlStatement)
 
@@ -89,7 +92,7 @@ func FetchCommunity() (Response, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		err = rows.Scan(&obj.Id, &obj.Name, &obj.Description, &obj.Contact, &obj.Logo, &obj.Cid, &obj.Lid, &obj.CreatedAt, &usr.Id, &usr.Username, &usr.Displayname, &usr.Email, &usr.Image, &cat.Id, &cat.Name, &cat.Logo, &cat.Color1, &cat.Color2, &cat.Color3)
+		err = rows.Scan(&obj.Id, &obj.Name, &obj.Description, &obj.Contact, &obj.Logo, &obj.Cid, &obj.Lid, &obj.CreatedAt, &obj.Count, &usr.Id, &usr.Username, &usr.Displayname, &usr.Email, &usr.Image, &cat.Id, &cat.Name, &cat.Logo, &cat.Color1, &cat.Color2, &cat.Color3)
 		obj.Leader = usr
 		obj.Category = cat
 
@@ -117,7 +120,7 @@ func FetchOwnedCommunity(uid string) (Response, error) {
 
 	conn := db.CreateCon()
 
-	sqlStatement := "SELECT communities.id, communities.community_name, communities.community_description, communities.community_contact, communities.community_logo, communities.community_category_id, communities.user_id, communities.created_at, users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, ''), community_categories.id, community_categories.category_name, community_categories.category_logo, community_categories.category_color1, community_categories.category_color2, community_categories.category_color3 FROM communities INNER JOIN users ON communities.user_id = users.id INNER JOIN community_categories ON communities.community_category_id = community_categories.id WHERE communities.user_id = ? LIMIT 10"
+	sqlStatement := "SELECT communities.id, communities.community_name, communities.community_description, communities.community_contact, communities.community_logo, communities.community_category_id, communities.user_id, communities.created_at, (SELECT COUNT(community_members.user_id) FROM community_members WHERE community_members.community_id = communities.id), users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, ''), community_categories.id, community_categories.category_name, community_categories.category_logo, community_categories.category_color1, community_categories.category_color2, community_categories.category_color3 FROM communities INNER JOIN users ON communities.user_id = users.id INNER JOIN community_categories ON communities.community_category_id = community_categories.id WHERE communities.user_id = ?"
 
 	rows, err := conn.Query(sqlStatement, uid)
 
@@ -128,7 +131,7 @@ func FetchOwnedCommunity(uid string) (Response, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		err = rows.Scan(&obj.Id, &obj.Name, &obj.Description, &obj.Contact, &obj.Logo, &obj.Cid, &obj.Lid, &obj.CreatedAt, &usr.Id, &usr.Username, &usr.Displayname, &usr.Email, &usr.Image, &cat.Id, &cat.Name, &cat.Logo, &cat.Color1, &cat.Color2, &cat.Color3)
+		err = rows.Scan(&obj.Id, &obj.Name, &obj.Description, &obj.Contact, &obj.Logo, &obj.Cid, &obj.Lid, &obj.CreatedAt, &obj.Count, &usr.Id, &usr.Username, &usr.Displayname, &usr.Email, &usr.Image, &cat.Id, &cat.Name, &cat.Logo, &cat.Color1, &cat.Color2, &cat.Color3)
 		obj.Leader = usr
 		obj.Category = cat
 
@@ -146,6 +149,132 @@ func FetchOwnedCommunity(uid string) (Response, error) {
 	return res, nil
 }
 
+// Read Based On Category
+func FetchCommunitiesCategory(cid string) (Response, error) {
+	var obj Community
+	var usr User
+	var cat CommunityCategory
+	var arrObj []Community
+	var res Response
+
+	conn := db.CreateCon()
+
+	if cid == "0" {
+		sqlStatement := "SELECT communities.id, communities.community_name, communities.community_description, communities.community_contact, communities.community_logo, communities.community_category_id, communities.user_id, communities.created_at, (SELECT COUNT(community_members.user_id) FROM community_members WHERE community_members.community_id = communities.id), users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, ''), community_categories.id, community_categories.category_name, community_categories.category_logo, community_categories.category_color1, community_categories.category_color2, community_categories.category_color3 FROM communities INNER JOIN users ON communities.user_id = users.id INNER JOIN community_categories ON communities.community_category_id = community_categories.id"
+
+		rows, err := conn.Query(sqlStatement)
+
+		if err != nil {
+			return res, err
+		}
+
+		defer rows.Close()
+
+		for rows.Next() {
+			err = rows.Scan(&obj.Id, &obj.Name, &obj.Description, &obj.Contact, &obj.Logo, &obj.Cid, &obj.Lid, &obj.CreatedAt, &obj.Count, &usr.Id, &usr.Username, &usr.Displayname, &usr.Email, &usr.Image, &cat.Id, &cat.Name, &cat.Logo, &cat.Color1, &cat.Color2, &cat.Color3)
+			obj.Leader = usr
+			obj.Category = cat
+
+			if err != nil {
+				return res, err
+			}
+
+			arrObj = append(arrObj, obj)
+		}
+	} else {
+		sqlStatement := "SELECT communities.id, communities.community_name, communities.community_description, communities.community_contact, communities.community_logo, communities.community_category_id, communities.user_id, communities.created_at, (SELECT COUNT(community_members.user_id) FROM community_members WHERE community_members.community_id = communities.id), users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, ''), community_categories.id, community_categories.category_name, community_categories.category_logo, community_categories.category_color1, community_categories.category_color2, community_categories.category_color3 FROM communities INNER JOIN users ON communities.user_id = users.id INNER JOIN community_categories ON communities.community_category_id = community_categories.id WHERE communities.community_category_id = ?"
+
+		rows, err := conn.Query(sqlStatement, cid)
+
+		if err != nil {
+			return res, err
+		}
+
+		defer rows.Close()
+
+		for rows.Next() {
+			err = rows.Scan(&obj.Id, &obj.Name, &obj.Description, &obj.Contact, &obj.Logo, &obj.Cid, &obj.Lid, &obj.CreatedAt, &obj.Count, &usr.Id, &usr.Username, &usr.Displayname, &usr.Email, &usr.Image, &cat.Id, &cat.Name, &cat.Logo, &cat.Color1, &cat.Color2, &cat.Color3)
+			obj.Leader = usr
+			obj.Category = cat
+
+			if err != nil {
+				return res, err
+			}
+
+			arrObj = append(arrObj, obj)
+		}
+	}
+
+	res.Status = http.StatusOK
+	res.Message = "Success"
+	res.Data = arrObj
+
+	return res, nil
+}
+
+// Search Based On Category
+func SearchCommunitiesCategory(cid string, key string) (Response, error) {
+	var obj Community
+	var usr User
+	var cat CommunityCategory
+	var arrObj []Community
+	var res Response
+
+	conn := db.CreateCon()
+
+	if cid == "0" {
+		sqlStatement := "SELECT communities.id, communities.community_name, communities.community_description, communities.community_contact, communities.community_logo, communities.community_category_id, communities.user_id, communities.created_at, (SELECT COUNT(community_members.user_id) FROM community_members WHERE community_members.community_id = communities.id), users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, ''), community_categories.id, community_categories.category_name, community_categories.category_logo, community_categories.category_color1, community_categories.category_color2, community_categories.category_color3 FROM communities INNER JOIN users ON communities.user_id = users.id INNER JOIN community_categories ON communities.community_category_id = community_categories.id WHERE communities.community_name LIKE ? OR communities.community_description LIKE ?"
+
+		rows, err := conn.Query(sqlStatement, "%"+key+"%", "%"+key+"%")
+
+		if err != nil {
+			return res, err
+		}
+
+		defer rows.Close()
+
+		for rows.Next() {
+			err = rows.Scan(&obj.Id, &obj.Name, &obj.Description, &obj.Contact, &obj.Logo, &obj.Cid, &obj.Lid, &obj.CreatedAt, &obj.Count, &usr.Id, &usr.Username, &usr.Displayname, &usr.Email, &usr.Image, &cat.Id, &cat.Name, &cat.Logo, &cat.Color1, &cat.Color2, &cat.Color3)
+			obj.Leader = usr
+			obj.Category = cat
+
+			if err != nil {
+				return res, err
+			}
+
+			arrObj = append(arrObj, obj)
+		}
+	} else {
+		sqlStatement := "SELECT communities.id, communities.community_name, communities.community_description, communities.community_contact, communities.community_logo, communities.community_category_id, communities.user_id, communities.created_at, (SELECT COUNT(community_members.user_id) FROM community_members WHERE community_members.community_id = communities.id), users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, ''), community_categories.id, community_categories.category_name, community_categories.category_logo, community_categories.category_color1, community_categories.category_color2, community_categories.category_color3 FROM communities INNER JOIN users ON communities.user_id = users.id INNER JOIN community_categories ON communities.community_category_id = community_categories.id WHERE communities.community_category_id = ? AND (communities.community_name LIKE ? OR communities.community_description LIKE ?)"
+
+		rows, err := conn.Query(sqlStatement, cid, "%"+key+"%", "%"+key+"%")
+
+		if err != nil {
+			return res, err
+		}
+
+		defer rows.Close()
+
+		for rows.Next() {
+			err = rows.Scan(&obj.Id, &obj.Name, &obj.Description, &obj.Contact, &obj.Logo, &obj.Cid, &obj.Lid, &obj.CreatedAt, &obj.Count, &usr.Id, &usr.Username, &usr.Displayname, &usr.Email, &usr.Image, &cat.Id, &cat.Name, &cat.Logo, &cat.Color1, &cat.Color2, &cat.Color3)
+			obj.Leader = usr
+			obj.Category = cat
+
+			if err != nil {
+				return res, err
+			}
+
+			arrObj = append(arrObj, obj)
+		}
+	}
+
+	res.Status = http.StatusOK
+	res.Message = "Success"
+	res.Data = arrObj
+
+	return res, nil
+}
+
 // Insert Data
 func StoreCommunity(name string, description string, contact string, logo string, cid uint64, lid uint64) (Response, error) {
 
@@ -154,12 +283,12 @@ func StoreCommunity(name string, description string, contact string, logo string
 	v := validator.New()
 
 	post := CommunityInsert{
-		Name: name,
+		Name:        name,
 		Description: description,
-		Contact: contact,
-		Logo: logo,
-		Cid: cid,
-		Lid: lid,
+		Contact:     contact,
+		Logo:        logo,
+		Cid:         cid,
+		Lid:         lid,
 	}
 
 	err := v.Struct(post)
@@ -223,20 +352,33 @@ func StoreCommunity(name string, description string, contact string, logo string
 }
 
 // Update Data
-func UpdateCommunity(title string, content string, image string, anonymous bool, id uint64) (Response, error) {
+func UpdateCommunity(name string, description string, contact string, logo string, cid uint64, id uint64) (Response, error) {
 
 	var res Response
 
 	con := db.CreateCon()
 
-	sqlStatement := "UPDATE posts SET post_title=?, post_content=?, post_image=?, anonymous=?, updated_at=NOW() WHERE id=?"
+	sqlStatement := ""
+
+	if logo == "" {
+		sqlStatement = "UPDATE communities SET community_name=?, community_description=?, community_contact=?, community_category_id=?, updated_at=NOW() WHERE id=?"
+	} else {
+		sqlStatement = "UPDATE communities SET community_name=?, community_description=?, community_contact=?, community_logo=?, community_category_id=?, updated_at=NOW() WHERE id=?"
+	}
+
 	stmt, err := con.Prepare(sqlStatement)
 
 	if err != nil {
 		return res, err
 	}
 
-	result, err := stmt.Exec(title, content, image, anonymous, id)
+	var result sql.Result
+
+	if logo == "" {
+		result, err = stmt.Exec(name, description, contact, cid, id)
+	} else {
+		result, err = stmt.Exec(name, description, contact, logo, cid, id)
+	}
 
 	if err != nil {
 		return res, err
@@ -258,20 +400,35 @@ func UpdateCommunity(title string, content string, image string, anonymous bool,
 }
 
 // Delete Data
-func DeleteCommunity(pid string) (Response, error) {
+func DeleteCommunity(cid uint64) (Response, error) {
 
 	var res Response
 
 	con := db.CreateCon()
 
-	sqlStatement := "DELETE FROM `posts` WHERE id=?"
+	sqlStatement2 := "DELETE FROM `community_members` WHERE community_id=?"
+	stmt2, err := con.Prepare(sqlStatement2)
+
+	if err != nil {
+		return res, err
+	}
+
+	result2, err := stmt2.Exec(cid)
+
+	if err != nil {
+		return res, err
+	}
+
+	fmt.Println(result2.RowsAffected())
+
+	sqlStatement := "DELETE FROM `communities` WHERE id=?"
 	stmt, err := con.Prepare(sqlStatement)
 
 	if err != nil {
 		return res, err
 	}
 
-	result, err := stmt.Exec(pid)
+	result, err := stmt.Exec(cid)
 
 	if err != nil {
 		return res, err
@@ -290,4 +447,21 @@ func DeleteCommunity(pid string) (Response, error) {
 	}
 
 	return res, nil
+}
+
+func GetCommunityImage(cid uint64) (string, error) {
+	img := ""
+
+	con := db.CreateCon()
+
+	sqlStatement := "SELECT community_logo FROM communities WHERE id = ?"
+	err := con.QueryRow(sqlStatement, cid).Scan(
+		&img,
+	)
+
+	if err != nil {
+		return "", err
+	}
+	
+	return img, nil
 }

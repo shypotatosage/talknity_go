@@ -50,6 +50,24 @@ func FetchOwnedPosts(c echo.Context) error {
 	return c.JSON(http.StatusOK, result)
 }
 
+func FetchPost(c echo.Context) error {
+	pid, err := strconv.ParseUint(c.Param("post_id"), 10, 64)
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError,
+			map[string]string{"message": err.Error()})
+	}
+
+	result, err := models.FetchPost(pid)
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError,
+			map[string]string{"message": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, result)
+}
+
 func SearchPosts(c echo.Context) error {
 	key := c.Param("search_key")
 
@@ -128,10 +146,8 @@ func StorePost(c echo.Context) error {
 }
 
 func UpdatePost(c echo.Context) error {
-
 	title := c.FormValue("post_title")
 	content := c.FormValue("post_content")
-	image := c.FormValue("post_image")
 	anonymous, err := strconv.ParseBool(c.FormValue("anonymous"))
 
 	if err != nil {
@@ -146,26 +162,98 @@ func UpdatePost(c echo.Context) error {
 			map[string]string{"message": err.Error()})
 	}
 
+	image, err := c.FormFile("post_image")
 
-	result, err := models.UpdatePost(title, content, image, anonymous, pid)
+	if err != nil {
+		if err != http.ErrMissingFile {
+			return c.JSON(http.StatusInternalServerError,
+				map[string]string{"message": err.Error()})
+		} else {
+			result, err := models.UpdatePost(title, content, "", anonymous, pid)
+
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError,
+					map[string]string{"message": err.Error()})
+			}
+
+			return c.JSON(http.StatusOK, result)
+		}
+	} else {
+		imgTemp, err := models.GetPostImage(pid)
+
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError,
+				map[string]string{"message": err.Error()})
+		}
+
+		src, err := image.Open()
+
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError,
+				map[string]string{"message": err.Error()})
+		}
+
+		defer src.Close()
+
+		fileByte, _ := io.ReadAll(src)
+		fileName := "images/post/" + strings.Replace(uuid.New().String(), "-", "", -1) + "." + strings.Split(image.Filename, ".")[1]
+
+		err = os.WriteFile(fileName, fileByte, 0777)
+
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError,
+				map[string]string{"message": err.Error()})
+		}
+
+		result, err := models.UpdatePost(title, content, fileName, anonymous, pid)
+	
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError,
+				map[string]string{"message": err.Error()})
+		}
+
+		if imgTemp != "" {
+			err := os.Remove(imgTemp)
+
+			if err != nil {
+				return c.JSON(http.StatusInternalServerError,
+					map[string]string{"message": err.Error()})
+			}
+		}
+	
+		return c.JSON(http.StatusOK, result)
+	}
+}
+
+func DeletePost(c echo.Context) error {
+	pid, err := strconv.ParseUint(c.Param("post_id"), 10, 64)
 
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError,
 			map[string]string{"message": err.Error()})
 	}
 
-	return c.JSON(http.StatusOK, result)
-}
+	image, err := models.GetPostImage(pid)
 
-func DeletePost(c echo.Context) error {
-
-	pid := c.FormValue("post_id")
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError,
+			map[string]string{"message": err.Error()})
+	}
 
 	result, err := models.DeletePost(pid)
 
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError,
 			map[string]string{"message": err.Error()})
+	}
+
+	if image != "" {
+		err := os.Remove(image)
+
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError,
+				map[string]string{"message": err.Error()})
+		}
 	}
 
 	return c.JSON(http.StatusOK, result)
