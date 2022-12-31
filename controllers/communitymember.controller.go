@@ -46,6 +46,31 @@ func DeleteMember(c echo.Context) error {
 	return c.JSON(http.StatusOK, result)
 }
 
+func SignoutCommunity(c echo.Context) error {
+	uid, err := strconv.ParseUint(c.Param("user_id"), 10, 64)
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError,
+			map[string]string{"message": err.Error()})
+	}
+
+	cid, err := strconv.ParseUint(c.Param("community_id"), 10, 64)
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError,
+			map[string]string{"message": err.Error()})
+	}
+
+	result, err := models.SignoutCommunity(uid, cid)
+
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError,
+			map[string]string{"message": err.Error()})
+	}
+
+	return c.JSON(http.StatusOK, result)
+}
+
 func JoinCommunity(c echo.Context) error {
 	cid, err := strconv.ParseUint(c.FormValue("community_id"), 10, 64)
 

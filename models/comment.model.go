@@ -31,7 +31,7 @@ func FetchAllComment(pid uint64) (Response, []Comment, error) {
 
 	conn := db.CreateCon()
 
-	sqlStatement := "SELECT comments.id, comments.comment_content, comments.created_at, users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, '') FROM comments INNER JOIN users ON comments.user_id = users.id WHERE comments.post_id = ?"
+	sqlStatement := "SELECT comments.id, comments.comment_content, comments.created_at, users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, '') FROM comments INNER JOIN users ON comments.user_id = users.id WHERE comments.post_id = ? ORDER BY comments.id DESC"
 
 	rows, err := conn.Query(sqlStatement, pid)
 

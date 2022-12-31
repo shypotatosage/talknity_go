@@ -92,8 +92,9 @@ func StorePost(c echo.Context) error {
 		if err != http.ErrMissingFile {
 			return c.JSON(http.StatusInternalServerError,
 				map[string]string{"message1": err.Error()})
+		} else {
+			fileExist = false
 		}
-		fileExist = false
 	}
 
 	fileName := ""

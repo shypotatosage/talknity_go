@@ -45,6 +45,7 @@ func Init() *echo.Echo {
 	e.PATCH("/update-profile", controllers.UpdateProfile)
 	
 	e.DELETE("/remove-member/:community_member_id", controllers.DeleteMember)
+	e.DELETE("/signout-community/:user_id/:community_id", controllers.SignoutCommunity)
 	e.DELETE("/delete-post/:post_id", controllers.DeletePost)
 	e.DELETE("/delete-community/:community_id", controllers.DeleteCommunity)
 

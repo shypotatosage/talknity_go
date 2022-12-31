@@ -120,6 +120,39 @@ func DeleteMember(id uint64) (Response, error) {
 	return res, nil
 }
 
+func SignoutCommunity(uid uint64, cid uint64) (Response, error) {
+	var res Response
+
+	con := db.CreateCon()
+
+	sqlStatement := "DELETE FROM community_members WHERE user_id=? AND community_id=?"
+	stmt, err := con.Prepare(sqlStatement)
+
+	if err != nil {
+		return res, err
+	}
+
+	result, err := stmt.Exec(uid, cid)
+
+	if err != nil {
+		return res, err
+	}
+
+	lastInsertedID, err := result.RowsAffected()
+
+	if err != nil {
+		return res, err
+	}
+
+	res.Status = http.StatusOK
+	res.Message = "Success"
+	res.Data = map[string]int64{
+		"last_inserted_id": lastInsertedID,
+	}
+
+	return res, nil
+}
+
 // Insert Data
 func JoinCommunity(cid uint64, uid uint64) (Response, error) {
 

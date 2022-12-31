@@ -24,7 +24,7 @@ func FetchAllCommunityCategory() (Response, error) {
 
 	conn := db.CreateCon()
 
-	sqlStatement := "SELECT community_categories.id, community_categories.category_name, community_categories.category_logo, community_categories.category_color1, community_categories.category_color2, community_categories.category_color3 FROM community_categories"
+	sqlStatement := "SELECT community_categories.id, community_categories.category_name, community_categories.category_logo, community_categories.category_color1, community_categories.category_color2, community_categories.category_color3 FROM community_categories ORDER BY community_categories.category_name ASC"
 
 	rows, err := conn.Query(sqlStatement)
 
@@ -59,7 +59,7 @@ func SearchCommunityCategory(key string) (Response, error) {
 
 	conn := db.CreateCon()
 
-	sqlStatement := "SELECT community_categories.id, community_categories.category_name, community_categories.category_logo, community_categories.category_color1, community_categories.category_color2, community_categories.category_color3 FROM community_categories WHERE community_categories.category_name LIKE ?"
+	sqlStatement := "SELECT community_categories.id, community_categories.category_name, community_categories.category_logo, community_categories.category_color1, community_categories.category_color2, community_categories.category_color3 FROM community_categories WHERE community_categories.category_name LIKE ? ORDER BY community_categories.category_name ASC"
 
 	rows, err := conn.Query(sqlStatement, "%" + key + "%")
 

@@ -50,7 +50,7 @@ func FetchAllPosts() (Response, error) {
 
 	conn := db.CreateCon()
 
-	sqlStatement := "SELECT posts.id, posts.post_title, posts.post_content, posts.post_image, posts.anonymous, posts.user_id, posts.created_at, (SELECT COUNT(comments.user_id) FROM comments WHERE comments.post_id = posts.id), users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, '') FROM posts INNER JOIN users ON posts.user_id = users.id"
+	sqlStatement := "SELECT posts.id, posts.post_title, posts.post_content, posts.post_image, posts.anonymous, posts.user_id, posts.created_at, (SELECT COUNT(comments.user_id) FROM comments WHERE comments.post_id = posts.id), users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, '') FROM posts INNER JOIN users ON posts.user_id = users.id ORDER BY posts.id DESC"
 
 	rows, err := conn.Query(sqlStatement)
 
@@ -124,7 +124,7 @@ func FetchOwnedPosts(uid string) (Response, error) {
 
 	conn := db.CreateCon()
 
-	sqlStatement := "SELECT posts.id, posts.post_title, posts.post_content, posts.post_image, posts.anonymous, posts.user_id, posts.created_at, (SELECT COUNT(comments.user_id) FROM comments WHERE comments.post_id = posts.id), users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, '') FROM posts INNER JOIN users ON posts.user_id = users.id WHERE posts.user_id = ?"
+	sqlStatement := "SELECT posts.id, posts.post_title, posts.post_content, posts.post_image, posts.anonymous, posts.user_id, posts.created_at, (SELECT COUNT(comments.user_id) FROM comments WHERE comments.post_id = posts.id), users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, '') FROM posts INNER JOIN users ON posts.user_id = users.id WHERE posts.user_id = ? ORDER BY posts.id DESC"
 
 	rows, err := conn.Query(sqlStatement, uid)
 
@@ -194,7 +194,7 @@ func SearchPosts(key string) (Response, error) {
 
 	conn := db.CreateCon()
 
-	sqlStatement := "SELECT posts.id, posts.post_title, posts.post_content, posts.post_image, posts.anonymous, posts.user_id, posts.created_at, (SELECT COUNT(comments.user_id) FROM comments WHERE comments.post_id = posts.id), users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, '') FROM posts INNER JOIN users ON posts.user_id = users.id WHERE posts.post_title LIKE ? OR posts.post_content LIKE ? OR (users.user_displayname LIKE ? AND posts.anonymous = false)"
+	sqlStatement := "SELECT posts.id, posts.post_title, posts.post_content, posts.post_image, posts.anonymous, posts.user_id, posts.created_at, (SELECT COUNT(comments.user_id) FROM comments WHERE comments.post_id = posts.id), users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, '') FROM posts INNER JOIN users ON posts.user_id = users.id WHERE posts.post_title LIKE ? OR posts.post_content LIKE ? OR (users.user_displayname LIKE ? AND posts.anonymous = false) ORDER BY posts.id DESC"
 
 	rows, err := conn.Query(sqlStatement, "%"+key+"%", "%"+key+"%", "%"+key+"%")
 
