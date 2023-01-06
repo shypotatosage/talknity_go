@@ -15,6 +15,7 @@ func Init() *echo.Echo {
 	
 	e.GET("/get-posts", controllers.FetchAllPosts)
 	e.GET("/get-post/:post_id", controllers.FetchPost)
+	e.GET("/get-ownedcomments/:user_id", controllers.FetchOwnedComments)
 	e.GET("/get-postshome", controllers.FetchAllPosts)
 	e.GET("/get-ownedposts/:user_id", controllers.FetchOwnedPosts)
 	e.GET("/search-posts/:search_key", controllers.SearchPosts)
@@ -43,10 +44,12 @@ func Init() *echo.Echo {
 	e.PATCH("/update-post", controllers.UpdatePost)
 	e.PATCH("/update-community", controllers.UpdateCommunity)
 	e.PATCH("/update-profile", controllers.UpdateProfile)
+	e.PATCH("/update-comment", controllers.UpdateComment)
 	
 	e.DELETE("/remove-member/:community_member_id", controllers.DeleteMember)
 	e.DELETE("/signout-community/:user_id/:community_id", controllers.SignoutCommunity)
 	e.DELETE("/delete-post/:post_id", controllers.DeletePost)
+	e.DELETE("/delete-comment/:comment_id", controllers.DeleteComment)
 	e.DELETE("/delete-community/:community_id", controllers.DeleteCommunity)
 
 	return e

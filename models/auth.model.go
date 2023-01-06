@@ -152,7 +152,7 @@ func GetUserImage(uid uint64) (string, error) {
 
 	con := db.CreateCon()
 
-	sqlStatement := "SELECT user_image FROM users WHERE id = ?"
+	sqlStatement := "SELECT COALESCE(user_image, '') FROM users WHERE id = ?"
 	err := con.QueryRow(sqlStatement, uid).Scan(
 		&img,
 	)
@@ -208,12 +208,15 @@ func UpdateProfile(uid uint64, displayname string, username string, email string
 		result, err := stmt.Exec(displayname, username, email, image, uid)
 	
 		if err != nil {
+			fmt.Print(err.Error())
+			
 			return res, err
 		}
 	
 		lastInsertedID, err := result.RowsAffected()
 	
 		if err != nil {
+			fmt.Print(err.Error())
 			return res, err
 		}
 	

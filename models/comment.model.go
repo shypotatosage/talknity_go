@@ -55,6 +55,43 @@ func FetchAllComment(pid uint64) (Response, []Comment, error) {
 	return res, arrObj, nil
 }
 
+// Read Owned
+func FetchOwnedComments(uid uint64) (Response, error) {
+	var obj Comment
+	var usr User
+	var arrObj []Comment
+	var res Response
+
+	conn := db.CreateCon()
+
+	sqlStatement := "SELECT comments.id, comments.comment_content, comments.created_at, users.id, users.user_username, users.user_displayname, users.user_email, COALESCE(users.user_image, '') FROM comments INNER JOIN users ON comments.user_id = users.id WHERE comments.user_id = ? ORDER BY comments.id DESC"
+
+	rows, err := conn.Query(sqlStatement, uid)
+
+	if err != nil {
+		return res, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		err = rows.Scan(&obj.Id, &obj.Content, &obj.CreatedAt, &usr.Id, &usr.Username, &usr.Displayname, &usr.Email, &usr.Image)
+		obj.User = usr
+
+		if err != nil {
+			return res, err
+		}
+
+		arrObj = append(arrObj, obj)
+	}
+
+	res.Status = http.StatusOK
+	res.Message = "Success"
+	res.Data = arrObj
+
+	return res, nil
+}
+
 // Insert Data
 func StoreComment(post_id uint64, content string, user_id uint64) (Response, error) {
 
@@ -116,6 +153,76 @@ func StoreComment(post_id uint64, content string, user_id uint64) (Response, err
 			"errors": err.Error(),
 		}
 
+		return res, err
+	}
+
+	res.Status = http.StatusOK
+	res.Message = "Success"
+	res.Data = map[string]int64{
+		"last_inserted_id": lastInsertedID,
+	}
+
+	return res, nil
+}
+
+// Delete Data
+func DeleteComment(cid uint64) (Response, error) {
+
+	var res Response
+
+	con := db.CreateCon()
+
+	sqlStatement := "DELETE FROM `comments` WHERE id=?"
+	stmt, err := con.Prepare(sqlStatement)
+
+	if err != nil {
+		return res, err
+	}
+
+	result, err := stmt.Exec(cid)
+
+	if err != nil {
+		return res, err
+	}
+
+	lastInsertedID, err := result.RowsAffected()
+
+	if err != nil {
+		return res, err
+	}
+
+	res.Status = http.StatusOK
+	res.Message = "Success"
+	res.Data = map[string]int64{
+		"last_inserted_id": lastInsertedID,
+	}
+
+	return res, nil
+}
+
+// Update Data
+func UpdateComment(content string, id uint64) (Response, error) {
+	var res Response
+
+	con := db.CreateCon()
+
+	sqlStatement := "UPDATE comments SET comment_content=?, updated_at=NOW() WHERE id=?"
+
+	stmt, err := con.Prepare(sqlStatement)
+
+	if err != nil {
+		return res, err
+	}
+	
+	result, err := stmt.Exec(content, id)
+
+	if err != nil {
+		return res, err
+	}
+
+	lastInsertedID, err := result.RowsAffected()
+
+	if err != nil {
 		return res, err
 	}
 

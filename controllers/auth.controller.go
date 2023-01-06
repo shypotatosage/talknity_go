@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -126,9 +127,11 @@ func UpdateProfile(c echo.Context) error {
 
 	if err != nil {
 		if err != http.ErrMissingFile {
+			fmt.Print(err.Error())
 			return c.JSON(http.StatusInternalServerError,
 				map[string]string{"message": err.Error()})
 		} else {
+			fmt.Print(err.Error())
 			result, err := models.UpdateProfile(uid, displayname, username, email, password, "")
 
 			if err != nil {
@@ -138,6 +141,12 @@ func UpdateProfile(c echo.Context) error {
 					errMsg = "Password does not match!"
 	
 					return c.JSON(http.StatusBadRequest,
+						map[string]string{"message": errMsg})
+				} else if err.Error() == "Error 1062: Duplicate entry '" + username + "' for key 'users_user_username_unique'" {
+					return c.JSON(http.StatusBadGateway,
+						map[string]string{"message": errMsg})
+				} else if err.Error() == "Error 1062: Duplicate entry '" + email + "' for key 'users_user_email_unique'" {
+					return c.JSON(http.StatusForbidden,
 						map[string]string{"message": errMsg})
 				} else {
 					return c.JSON(http.StatusInternalServerError,
@@ -151,6 +160,7 @@ func UpdateProfile(c echo.Context) error {
 		imgTemp, err := models.GetUserImage(uid)
 
 		if err != nil {
+			fmt.Print(err.Error())
 			return c.JSON(http.StatusInternalServerError,
 				map[string]string{"message": err.Error()})
 		}
@@ -158,6 +168,7 @@ func UpdateProfile(c echo.Context) error {
 		src, err := image.Open()
 
 		if err != nil {
+			fmt.Print(err.Error())
 			return c.JSON(http.StatusInternalServerError,
 				map[string]string{"message": err.Error()})
 		}
